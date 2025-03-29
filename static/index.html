@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Sentiment Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .positive {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+        .negative {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Sentiment Analyzer</h1>
+        <p>Enter a sentence to analyze its sentiment:</p>
+        <input type="text" id="userInput" placeholder="Type something here...">
+        <button onclick="analyzeText()">Analyze</button>
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        async function analyzeText() {
+            const text = document.getElementById("userInput").value;
+            
+            if (!text) {
+                alert("Please enter some text!");
+                return;
+            }
+            
+            document.getElementById("result").innerText = "Analyzing...";
+            document.getElementById("result").className = "result";
+            
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('text', text);
+            
+            try {
+                // Replace with your deployed Heroku URL when available
+                const apiUrl = window.location.hostname === "localhost" 
+                    ? "http://localhost:8000/analyze/" 
+                    : "/analyze/";
+                
+                const response = await fetch(apiUrl, {
+                    method: "POST",
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('API request failed');
+                }
+                
+                const data = await response.json();
+                const resultElement = document.getElementById("result");
+                
+                resultElement.innerText = `Sentiment: ${data.label}, Confidence: ${(data.score * 100).toFixed(2)}%`;
+                resultElement.className = `result ${data.label.toLowerCase()}`;
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("result").innerText = "Error analyzing text. Please try again.";
+            }
+        }
+    </script>
+</body>
+</html>
