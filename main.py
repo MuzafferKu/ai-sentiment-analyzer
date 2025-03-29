@@ -1,8 +1,13 @@
+import os
 from fastapi import FastAPI, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+import torch
 from transformers import pipeline
-import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -14,7 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+classifier = None
+
+@app.on_event("startup")
+async def startup_event():
+    global classifier
+    logger.info("Loading sentiment analysis model...")
+    classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    logger.info("Model loaded successfully!")
 
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
@@ -24,6 +36,11 @@ def read_root():
 
 @app.post("/analyze/")
 async def analyze_text(text: str = Form(...)):
+    global classifier
+    if classifier is None:
+        logger.info("Loading model on demand...")
+        classifier = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+    
     result = classifier(text)
     return {"label": result[0]['label'], "score": float(result[0]['score'])}
 
